@@ -2,7 +2,7 @@
 
 <p align="center">
   <b>AG-EfficientViT V3</b><br>
-  A journal-style research repository for AI-generated image detection using artifact-guided hybrid CNN-Transformer fusion.
+ Fine-tuned EfficientNetB0 and ViT-Tiny branches with artifact-sensitive logit fusion for real vs AI-generated image detection.
 </p>
 
 <p align="center">
