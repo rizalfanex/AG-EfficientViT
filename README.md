@@ -2,7 +2,8 @@
 
 <p align="center">
   <b>AG-EfficientViT V3</b><br>
- Fine-tuned EfficientNetB0 and ViT-Tiny branches with artifact-sensitive logit fusion for real vs AI-generated image detection.
+  Fine-tuned EfficientNetB0 and ViT-Tiny branches with artifact-sensitive logit fusion for real vs AI-generated image detection.<br>
+  <sub>98.865% Accuracy · 98.864% F1-score · 0.999116 AUC on CIFAKE</sub>
 </p>
 
 <p align="center">
@@ -10,9 +11,6 @@
   <img src="https://img.shields.io/badge/Dataset-CIFAKE-green" />
   <img src="https://img.shields.io/badge/Framework-PyTorch-red" />
   <img src="https://img.shields.io/badge/Final%20Model-AG--EfficientViT%20V3-purple" />
-  <img src="https://img.shields.io/badge/Accuracy-98.865%25-brightgreen" />
-  <img src="https://img.shields.io/badge/F1--score-98.864%25-yellowgreen" />
-  <img src="https://img.shields.io/badge/AUC-0.999116-orange" />
 </p>
 
 ---
