@@ -1,0 +1,2 @@
+model,dataset,checkpoint_epoch,accuracy,precision_binary,recall_binary,f1_binary,precision_macro,recall_macro,f1_macro,precision_weighted,recall_weighted,f1_weighted,auc
+AG-EfficientViT-V2,CIFAKE,18,0.98625,0.9822473470197362,0.9904,0.9863068266693223,0.9862835000703198,0.98625,0.9862497631865466,0.9862835000703198,0.98625,0.9862497631865467,0.99873316

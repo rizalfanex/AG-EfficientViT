@@ -1,0 +1,30 @@
+dataset:
+  name: CIFAKE
+  root: data/CIFAKE
+  train_dir: data/CIFAKE/train
+  test_dir: data/CIFAKE/test
+  num_classes: 2
+  class_names:
+    - fake
+    - real
+
+training:
+  image_size: 224
+  batch_size: 128
+  epochs: 20
+  learning_rate: 0.00003
+  weight_decay: 0.0001
+  optimizer: adamw
+  num_workers: 4
+  amp: true
+  seed: 42
+
+model:
+  name: efficientnet_b0
+  pretrained: true
+
+output:
+  checkpoint_dir: checkpoints
+  log_dir: results/logs
+  table_dir: results/tables
+  figure_dir: results/figures

@@ -1,0 +1,2 @@
+model,dataset,checkpoint_epoch,accuracy,precision_binary,recall_binary,f1_binary,precision_macro,recall_macro,f1_macro,precision_weighted,recall_weighted,f1_weighted,auc
+EfficientNetB0,CIFAKE,19,0.98065,0.9821446484100712,0.9791,0.9806199609394561,0.9806546190908895,0.98065,0.9806499535115133,0.9806546190908896,0.98065,0.9806499535115134,0.9976744300000002

@@ -1,0 +1,37 @@
+# Dataset
+data/
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Checkpoints and large weights
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs and temporary files
+*.log
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.venv/
+env/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
