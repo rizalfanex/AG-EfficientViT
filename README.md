@@ -19,7 +19,7 @@
 
 ## Abstract
 
-The rapid advancement of generative artificial intelligence has increased the difficulty of distinguishing authentic images from AI-generated content. Existing convolutional neural networks and Vision Transformer models have shown strong performance in visual classification tasks; however, single-branch architectures may not fully capture both local artifact traces and global semantic inconsistencies in synthetic images. This repository presents **Artifact Guided EfficientViT (AG-EfficientViT)**, a hybrid CNN-Transformer framework for AI-generated image detection. The final proposed model, **AG-EfficientViT V3**, integrates a fine-tuned EfficientNetB0 branch, a fine-tuned ViT-Tiny branch, and an artifact-oriented branch through logit-level fusion. Experiments on the CIFAKE dataset show that AG-EfficientViT V3 achieves **98.865% accuracy**, **98.864% F1-score**, and **0.999116 AUC**, outperforming EfficientNetB0, ViT-Tiny, EfficientViT-Hybrid, and earlier AG-EfficientViT variants. The results demonstrate that fine-tuned branch initialization and artifact-guided logit fusion provide a stronger detection framework than naïve CNN-Transformer concatenation.
+The rapid advancement of generative artificial intelligence has increased the difficulty of distinguishing authentic images from AI-generated content. Existing convolutional neural networks and Vision Transformer models have shown strong performance in visual classification tasks; however, single-branch architectures may not fully capture both local artifact traces and global semantic inconsistencies in synthetic images. This repository presents **Artifact Guided EfficientViT (AG-EfficientViT)**, a hybrid CNN-Transformer framework for AI-generated image detection. The final proposed model, **AG-EfficientViT V3**, integrates a fine-tuned EfficientNetB0 branch, a fine-tuned ViT-Tiny branch, and an artifact-oriented branch using calibrated logit-level fusion. On the CIFAKE benchmark, AG-EfficientViT V3 achieves **98.865% accuracy**, **98.864% F1-score**, and **0.999116 AUC**, outperforming the evaluated CNN baseline, Transformer baseline, simple hybrid baseline, and earlier AG-EfficientViT variants.
 
 ---
 
@@ -30,24 +30,24 @@ The rapid advancement of generative artificial intelligence has increased the di
   - [1.2 Research Motivation](#12-research-motivation)
   - [1.3 Main Contributions](#13-main-contributions)
 - [2. Proposed Method](#2-proposed-method)
-  - [2.1 Problem Formulation and Notation](#21-problem-formulation-and-notation)
+  - [2.1 Problem Formulation](#21-problem-formulation)
   - [2.2 Overall Architecture](#22-overall-architecture)
-  - [2.3 Fine-Tuned EfficientNetB0 Branch](#23-fine-tuned-efficientnetb0-branch)
-  - [2.4 Fine-Tuned ViT-Tiny Branch](#24-fine-tuned-vit-tiny-branch)
-  - [2.5 Artifact Branch](#25-artifact-branch)
-  - [2.6 Artifact-Guided Logit-Level Fusion](#26-artifact-guided-logit-level-fusion)
-  - [2.7 Training Objective](#27-training-objective)
-  - [2.8 Difference Between V1, V2, and V3](#28-difference-between-v1-v2-and-v3)
+  - [2.3 Branch-Level Representation Learning](#23-branch-level-representation-learning)
+  - [2.4 Artifact-Guided Logit-Level Fusion](#24-artifact-guided-logit-level-fusion)
+  - [2.5 Training Objective](#25-training-objective)
+  - [2.6 Evaluation Metrics](#26-evaluation-metrics)
+  - [2.7 Difference Between V1, V2, and V3](#27-difference-between-v1-v2-and-v3)
 - [3. Dataset and Experimental Setup](#3-dataset-and-experimental-setup)
   - [3.1 Dataset Description](#31-dataset-description)
   - [3.2 Dataset Organization](#32-dataset-organization)
-  - [3.3 Evaluation Metrics](#33-evaluation-metrics)
+  - [3.3 Experimental Protocol](#33-experimental-protocol)
 - [4. Experimental Results and Analysis](#4-experimental-results-and-analysis)
   - [4.1 Clean-Test Performance](#41-clean-test-performance)
   - [4.2 Ablation Study](#42-ablation-study)
   - [4.3 Robustness Analysis](#43-robustness-analysis)
   - [4.4 Qualitative Results](#44-qualitative-results)
   - [4.5 Visual Interpretability](#45-visual-interpretability)
+  - [4.6 Comparison with Related Studies](#46-comparison-with-related-studies)
 - [5. Repository Usage](#5-repository-usage)
   - [5.1 Repository Structure](#51-repository-structure)
   - [5.2 Installation](#52-installation)
@@ -70,63 +70,73 @@ Convolutional neural networks are effective in capturing local spatial and textu
 
 ## 1.2 Research Motivation
 
-A simple combination of CNN and Transformer features does not always guarantee improved detection performance. In this project, the simple EfficientViT-Hybrid baseline did not outperform the strongest single-branch ViT-Tiny baseline. This motivates a more careful fusion strategy that uses fine-tuned branch initialization and artifact-guided decision fusion.
+A simple combination of CNN and Transformer features does not always guarantee improved detection performance. In this project, the simple EfficientViT-Hybrid baseline does not outperform the strongest single-branch ViT-Tiny baseline. This motivates a more careful fusion strategy that uses fine-tuned branch initialization and artifact-guided decision fusion.
 
-The main research motivation is therefore to develop a hybrid detection model that can preserve the strengths of CNN and Transformer branches while introducing artifact-aware correction at the decision level.
+The main research motivation is therefore to develop a hybrid detection model that preserves the strengths of CNN and Transformer branches while introducing artifact-aware correction at the decision level.
 
 ## 1.3 Main Contributions
 
 The main contributions of this repository are summarized as follows:
 
-1. **Hybrid CNN-Transformer Detection Framework**  
-   This repository implements AG-EfficientViT, a hybrid framework for AI-generated image detection.
-
-2. **Fine-Tuned Branch Initialization**  
-   The final model initializes its CNN and Transformer branches using separately fine-tuned EfficientNetB0 and ViT-Tiny checkpoints.
-
-3. **Artifact-Guided Logit-Level Fusion**  
-   AG-EfficientViT V3 introduces artifact-guided logit-level fusion to combine CNN logits, Transformer logits, and artifact logits.
-
-4. **Transparent Variant-Level Ablation**  
-   The repository reports EfficientNetB0, ViT-Tiny, EfficientViT-Hybrid, AG-EfficientViT V1, AG-EfficientViT V2, and AG-EfficientViT V3 to make the evolution of the proposed design explicit.
-
-5. **Robustness and Qualitative Analysis**  
-   The repository includes robustness evaluation under JPEG compression, blur, resize degradation, and additive noise, together with qualitative and interpretability-oriented visual outputs.
+1. **Hybrid CNN-Transformer detection framework** for AI-generated image detection.
+2. **Fine-tuned branch initialization** using separately trained EfficientNetB0 and ViT-Tiny checkpoints.
+3. **Artifact-guided logit-level fusion** that combines CNN logits, Transformer logits, and artifact logits.
+4. **Transparent variant-level ablation** covering EfficientNetB0, ViT-Tiny, EfficientViT-Hybrid, AG-EfficientViT V1, V2, and V3.
+5. **Robustness, qualitative, and interpretability-oriented analysis** to support journal-style reporting.
 
 ---
 
 # 2. Proposed Method
 
-## 2.1 Problem Formulation and Notation
+## 2.1 Problem Formulation
 
-Let \(x \in \mathbb{R}^{H \times W \times 3}\) denote an input RGB image and \(y \in \{0,1\}\) denote its binary label, where \(0\) represents an AI-generated image and \(1\) represents a real image, following the class indexing used by the dataset loader.
+Let `x` denote an input RGB image and `y` denote its binary ground-truth label. The model is trained to classify an image as either AI-generated or real.
 
-The goal is to learn a binary classifier:
+**Equation (1). Input and label definition**
 
-\[
-f_{\theta}(x) \rightarrow \hat{y},
-\]
+```math
+x \in \mathbb{R}^{H \times W \times 3}, \qquad y \in \{0,1\}
+```
 
-where \(\hat{y}\) is the predicted class label. The model produces a two-dimensional logit vector:
+where `0` denotes an AI-generated image and `1` denotes a real image, following the binary class indexing used in this repository.
 
-\[
-z = [z_0, z_1] \in \mathbb{R}^{2}.
-\]
+The model learns a function that maps an input image to a two-class prediction.
 
-The posterior probability is obtained using the softmax function:
+**Equation (2). Binary image classification function**
 
-\[
+```math
+f_{\theta}(x) \rightarrow \hat{y}
+```
+
+The network produces a two-dimensional logit vector.
+
+**Equation (3). Two-class logit vector**
+
+```math
+z = [z_0, z_1] \in \mathbb{R}^{2}
+```
+
+The posterior probability for class `k` is computed using the softmax function.
+
+**Equation (4). Softmax probability**
+
+```math
 p(y=k \mid x) =
 \frac{\exp(z_k)}
 {\sum_{j=0}^{1}\exp(z_j)},
-\quad k \in \{0,1\}.
-\]
+\qquad k \in \{0,1\}
+```
 
-The final prediction is:
+The final predicted class is obtained by selecting the class with the maximum posterior probability.
 
-\[
-\hat{y} = \arg\max_{k \in \{0,1\}} p(y=k \mid x).
-\]
+**Equation (5). Final prediction**
+
+```math
+\hat{y}
+=
+\arg\max_{k \in \{0,1\}}
+p(y=k \mid x)
+```
 
 ## 2.2 Overall Architecture
 
@@ -138,192 +148,252 @@ The proposed **AG-EfficientViT V3** framework consists of three parallel branche
 
 **Figure 1.** Overall architecture of the proposed AG-EfficientViT V3 framework. The model combines a fine-tuned EfficientNetB0 branch, a fine-tuned ViT-Tiny branch, and an artifact branch through logit-level fusion.
 
-The three branch outputs are defined as:
+The model uses three complementary decision sources:
 
-\[
-z_{\mathrm{cnn}} = f_{\mathrm{cnn}}(x;\theta_{\mathrm{cnn}}),
-\]
+1. an EfficientNetB0 branch for local spatial and texture cues,
+2. a ViT-Tiny branch for global semantic representation, and
+3. an artifact branch for synthetic-trace-oriented evidence.
 
-\[
-z_{\mathrm{vit}} = f_{\mathrm{vit}}(x;\theta_{\mathrm{vit}}),
-\]
+## 2.3 Branch-Level Representation Learning
 
-\[
-z_{\mathrm{art}} = f_{\mathrm{art}}(x;\theta_{\mathrm{art}}),
-\]
+The CNN branch produces a class-logit vector from the input image.
 
-where \(z_{\mathrm{cnn}}\), \(z_{\mathrm{vit}}\), and \(z_{\mathrm{art}}\) are the class logits produced by the EfficientNetB0 branch, ViT-Tiny branch, and artifact branch, respectively.
+**Equation (6). EfficientNetB0 branch logits**
 
-## 2.3 Fine-Tuned EfficientNetB0 Branch
+```math
+z_{\mathrm{cnn}}
+=
+f_{\mathrm{cnn}}(x;\theta_{\mathrm{cnn}}^{*})
+```
 
-The EfficientNetB0 branch is used to capture local image patterns, including texture details, edge-level irregularities, and high-frequency spatial cues. In AG-EfficientViT V3, this branch is initialized from the best fine-tuned EfficientNetB0 checkpoint trained on CIFAKE.
+where `theta_cnn*` denotes the fine-tuned EfficientNetB0 parameters.
 
-Formally, the CNN branch produces:
+The Transformer branch produces a second class-logit vector.
 
-\[
-z_{\mathrm{cnn}} = f_{\mathrm{cnn}}(x;\theta_{\mathrm{cnn}}^{*}),
-\]
+**Equation (7). ViT-Tiny branch logits**
 
-where \(\theta_{\mathrm{cnn}}^{*}\) denotes the fine-tuned EfficientNetB0 parameters obtained from the EfficientNetB0 baseline training stage.
+```math
+z_{\mathrm{vit}}
+=
+f_{\mathrm{vit}}(x;\theta_{\mathrm{vit}}^{*})
+```
 
-## 2.4 Fine-Tuned ViT-Tiny Branch
+where `theta_vit*` denotes the fine-tuned ViT-Tiny parameters.
 
-The ViT-Tiny branch is used to capture global semantic representation and long-range dependencies. This branch provides a complementary view to the CNN branch by modeling image-level consistency and broader structural information.
+The artifact branch extracts artifact-sensitive features and maps them into class logits.
 
-The Transformer branch produces:
+**Equation (8). Artifact feature extraction**
 
-\[
-z_{\mathrm{vit}} = f_{\mathrm{vit}}(x;\theta_{\mathrm{vit}}^{*}),
-\]
+```math
+h_{\mathrm{art}}
+=
+g_{\mathrm{art}}(x;\theta_{\mathrm{art}})
+```
 
-where \(\theta_{\mathrm{vit}}^{*}\) denotes the fine-tuned ViT-Tiny parameters obtained from the ViT-Tiny baseline training stage.
+**Equation (9). Artifact branch logits**
 
-## 2.5 Artifact Branch
+```math
+z_{\mathrm{art}}
+=
+W_{\mathrm{art}} h_{\mathrm{art}} + b_{\mathrm{art}}
+```
 
-The artifact branch is designed to extract artifact-oriented information related to synthetic image traces. In contrast to the CNN and Transformer branches, which are initialized from strong fine-tuned classifiers, the artifact branch provides an additional trainable pathway for artifact-sensitive correction.
+The artifact branch is not intended to replace the CNN or Transformer branch. Instead, it provides an additional artifact-sensitive decision signal that can support the final classification.
 
-Let \(h_{\mathrm{art}}\) denote the artifact feature representation:
+## 2.4 Artifact-Guided Logit-Level Fusion
 
-\[
-h_{\mathrm{art}} = g_{\mathrm{art}}(x;\theta_{\mathrm{art}}),
-\]
+AG-EfficientViT V3 performs fusion at the logit level rather than through naïve feature concatenation. The three branch logits are combined into the final logit vector.
 
-where \(g_{\mathrm{art}}\) is the artifact feature extractor. The artifact branch logits are obtained by:
+**Equation (10). Logit-level fusion**
 
-\[
-z_{\mathrm{art}} = W_{\mathrm{art}}h_{\mathrm{art}} + b_{\mathrm{art}}.
-\]
-
-This branch is not intended to replace the CNN or Transformer branch, but to provide complementary artifact-sensitive evidence during the final fusion stage.
-
-## 2.6 Artifact-Guided Logit-Level Fusion
-
-AG-EfficientViT V3 performs fusion at the logit level rather than by naïvely concatenating intermediate features. The final logit vector is computed as a weighted combination of the three branch logits:
-
-\[
-z_{\mathrm{final}} =
+```math
+z_{\mathrm{final}}
+=
 \alpha_{\mathrm{cnn}} z_{\mathrm{cnn}}
 +
 \alpha_{\mathrm{vit}} z_{\mathrm{vit}}
 +
-\alpha_{\mathrm{art}} z_{\mathrm{art}}.
-\]
+\alpha_{\mathrm{art}} z_{\mathrm{art}}
+```
 
-The fusion weights are normalized using softmax:
+The fusion weights are normalized using the softmax function.
 
-\[
-[\alpha_{\mathrm{cnn}}, \alpha_{\mathrm{vit}}, \alpha_{\mathrm{art}}]
+**Equation (11). Fusion-weight normalization**
+
+```math
+[\alpha_{\mathrm{cnn}},\alpha_{\mathrm{vit}},\alpha_{\mathrm{art}}]
 =
-\mathrm{softmax}(w),
-\]
+\mathrm{softmax}(w)
+```
 
-where \(w \in \mathbb{R}^{3}\) is a learnable fusion-weight vector.
+where `w` is a learnable vector of three fusion logits.
 
-In the implemented AG-EfficientViT V3 model, the initial fusion tendency is ViT-dominant, CNN-supportive, and artifact-conservative:
+In the implemented V3 configuration, the initial fusion vector is:
 
-\[
-w = [1.0,\;2.5,\;-2.0],
-\]
+**Equation (12). Initial fusion logits**
 
-which produces the initial normalized weights:
+```math
+w = [1.0,\;2.5,\;-2.0]
+```
 
-\[
-\alpha_{\mathrm{cnn}} \approx 0.1808,\quad
-\alpha_{\mathrm{vit}} \approx 0.8102,\quad
-\alpha_{\mathrm{art}} \approx 0.0090.
-\]
+This gives the following initial normalized fusion weights:
 
-This initialization preserves the strong decision boundary of the fine-tuned ViT-Tiny branch while allowing the CNN and artifact branches to contribute to the final prediction.
+**Equation (13). Initial normalized fusion weights**
 
-## 2.7 Training Objective
+```math
+\alpha_{\mathrm{cnn}} \approx 0.1808,
+\qquad
+\alpha_{\mathrm{vit}} \approx 0.8102,
+\qquad
+\alpha_{\mathrm{art}} \approx 0.0090
+```
 
-The model is trained using the standard cross-entropy loss. For a training set \(\mathcal{D}=\{(x_i,y_i)\}_{i=1}^{N}\), the objective is:
+This initialization is intentionally ViT-dominant, CNN-supportive, and artifact-conservative. It preserves the strong decision boundary of the fine-tuned ViT-Tiny branch while still allowing CNN and artifact information to contribute.
 
-\[
+The final class probability is computed from the fused logits.
+
+**Equation (14). Final probability from fused logits**
+
+```math
+p(y=k \mid x)
+=
+\mathrm{softmax}(z_{\mathrm{final}})_k
+```
+
+## 2.5 Training Objective
+
+The model is optimized using cross-entropy loss over the binary training set.
+
+**Equation (15). Training set**
+
+```math
+\mathcal{D}
+=
+\{(x_i,y_i)\}_{i=1}^{N}
+```
+
+**Equation (16). Cross-entropy objective**
+
+```math
 \mathcal{L}_{\mathrm{CE}}
 =
 -\frac{1}{N}
 \sum_{i=1}^{N}
 \sum_{k=0}^{1}
-\mathbb{1}(y_i=k)
-\log p(y=k \mid x_i).
-\]
+\mathbf{1}(y_i=k)
+\log p(y=k \mid x_i)
+```
 
-The final probability is computed from \(z_{\mathrm{final}}\):
+During V3 training, the fine-tuned CNN and ViT branches provide strong initialized decision signals, while the artifact branch and fusion mechanism refine the final prediction.
 
-\[
-p(y=k \mid x_i)
+## 2.6 Evaluation Metrics
+
+The evaluation uses accuracy, precision, recall, F1-score, and AUC.
+
+**Equation (17). Accuracy**
+
+```math
+\mathrm{Accuracy}
 =
-\mathrm{softmax}(z_{\mathrm{final}})_k.
-\]
+\frac{TP+TN}
+{TP+TN+FP+FN}
+```
 
-During V3 training, the fine-tuned CNN and ViT branches provide strong initialized decision signals, while the artifact branch and fusion weights are optimized to improve final classification.
+**Equation (18). Precision**
 
-## 2.8 Difference Between V1, V2, and V3
+```math
+\mathrm{Precision}
+=
+\frac{TP}
+{TP+FP}
+```
 
-The AG-EfficientViT variants are intentionally reported to make the model development process transparent. V1 and V2 are not hidden failed attempts; they are retained as ablation variants to show why the final V3 design was selected.
+**Equation (19). Recall**
 
-| Model Variant | Main Design | Initialization Strategy | Fusion Level | Artifact Branch | Result Summary |
-|---|---|---|---|---|---|
-| **AG-EfficientViT V1** | Initial artifact-guided hybrid model | Generic pretrained branch initialization | Artifact-guided hybrid fusion | Yes | Competitive but below ViT-Tiny and V3 |
-| **AG-EfficientViT V2** | Revised gated fusion variant | Generic pretrained branch initialization | Gated concatenation / interaction-level fusion | Yes | Higher recall, but lower precision and accuracy |
-| **AG-EfficientViT V3** | Final proposed model | Fine-tuned EfficientNetB0 + fine-tuned ViT-Tiny checkpoints | Logit-level fusion | Yes | Best overall clean CIFAKE performance |
+```math
+\mathrm{Recall}
+=
+\frac{TP}
+{TP+FN}
+```
 
-### 2.8.1 AG-EfficientViT V1
+**Equation (20). F1-score**
 
-AG-EfficientViT V1 introduced the initial artifact-guided hybrid design. It combined CNN, Transformer, and artifact-oriented information, but the branch initialization and fusion strategy were not yet optimal.
+```math
+\mathrm{F1}
+=
+2 \cdot
+\frac{\mathrm{Precision}\cdot\mathrm{Recall}}
+{\mathrm{Precision}+\mathrm{Recall}}
+```
 
-Its result was:
+AUC measures the area under the ROC curve and reflects the ranking quality of the predicted probabilities.
 
-\[
+## 2.7 Difference Between V1, V2, and V3
+
+The AG-EfficientViT variants are retained to make the model development process transparent. V1 and V2 are not presented as final models; they are reported as ablation variants that explain why V3 was selected.
+
+| Variant | Main Purpose | Branch Initialization | Fusion Design | Main Observation |
+|---|---|---|---|---|
+| **AG-EfficientViT V1** | Initial artifact-guided hybrid design | Generic pretrained initialization | Artifact-guided weighted fusion | Competitive, but below ViT-Tiny and V3 |
+| **AG-EfficientViT V2** | Revised interaction/gating variant | Generic pretrained initialization | Gated concatenation / interaction fusion | Higher recall, but reduced precision and accuracy |
+| **AG-EfficientViT V3** | Final proposed model | Fine-tuned EfficientNetB0 + fine-tuned ViT-Tiny checkpoints | Calibrated logit-level fusion | Best overall clean CIFAKE performance |
+
+### 2.7.1 AG-EfficientViT V1
+
+AG-EfficientViT V1 introduced the initial artifact-guided hybrid idea. It combined CNN, Transformer, and artifact-oriented information, but the branch initialization and fusion design were not yet optimal.
+
+**Equation (21). V1 result summary**
+
+```math
 \mathrm{Accuracy}_{\mathrm{V1}} = 98.670\%,
-\quad
+\qquad
 \mathrm{F1}_{\mathrm{V1}} = 98.668\%,
-\quad
-\mathrm{AUC}_{\mathrm{V1}} = 0.998713.
-\]
+\qquad
+\mathrm{AUC}_{\mathrm{V1}} = 0.998713
+```
 
-The result shows that simply adding an artifact-aware branch does not automatically improve performance over a strong ViT baseline.
+This result shows that adding an artifact branch alone is not sufficient to outperform the strongest single-branch baseline.
 
-### 2.8.2 AG-EfficientViT V2
+### 2.7.2 AG-EfficientViT V2
 
-AG-EfficientViT V2 explored a revised gated fusion strategy. This variant improved recall but reduced precision, indicating a stronger tendency to predict the positive class.
+AG-EfficientViT V2 explored a revised gated fusion strategy. This variant achieved high recall but lower precision, suggesting a stronger tendency toward one class.
 
-Its result was:
+**Equation (22). V2 result summary**
 
-\[
+```math
 \mathrm{Accuracy}_{\mathrm{V2}} = 98.625\%,
-\quad
+\qquad
 \mathrm{Precision}_{\mathrm{V2}} = 98.225\%,
-\quad
+\qquad
 \mathrm{Recall}_{\mathrm{V2}} = 99.040\%,
-\quad
+\qquad
 \mathrm{F1}_{\mathrm{V2}} = 98.631\%,
-\quad
-\mathrm{AUC}_{\mathrm{V2}} = 0.998733.
-\]
+\qquad
+\mathrm{AUC}_{\mathrm{V2}} = 0.998733
+```
 
-This behavior suggests that stronger gating does not necessarily lead to better calibration.
+This behavior indicates that a stronger gated interaction does not necessarily improve calibration or overall accuracy.
 
-### 2.8.3 AG-EfficientViT V3
+### 2.7.3 AG-EfficientViT V3
 
-AG-EfficientViT V3 is the final proposed model. Its main difference is that the CNN and Transformer branches are not trained from generic pretrained initialization only. Instead, they are initialized using the best fine-tuned EfficientNetB0 and ViT-Tiny checkpoints. The model then performs artifact-guided logit-level fusion.
+AG-EfficientViT V3 is the final proposed model. Its key difference is not simply the presence of three branches, but the use of fine-tuned branch initialization and calibrated logit-level fusion.
 
-Its result was:
+**Equation (23). V3 result summary**
 
-\[
+```math
 \mathrm{Accuracy}_{\mathrm{V3}} = 98.865\%,
-\quad
+\qquad
 \mathrm{Precision}_{\mathrm{V3}} = 98.938\%,
-\quad
+\qquad
 \mathrm{Recall}_{\mathrm{V3}} = 98.790\%,
-\quad
+\qquad
 \mathrm{F1}_{\mathrm{V3}} = 98.864\%,
-\quad
-\mathrm{AUC}_{\mathrm{V3}} = 0.999116.
-\]
+\qquad
+\mathrm{AUC}_{\mathrm{V3}} = 0.999116
+```
 
-Thus, V3 demonstrates that the most effective strategy is not merely adding more branches, but using strong fine-tuned branch initialization and a calibrated logit-level fusion mechanism.
+Thus, V3 demonstrates that the best strategy is not merely to stack modules, but to use strong branch-level initialization and a stable decision-level fusion mechanism.
 
 ---
 
@@ -356,45 +426,16 @@ data/
         └── real/
 ```
 
-## 3.3 Evaluation Metrics
+## 3.3 Experimental Protocol
 
-The evaluation uses standard binary classification metrics.
+All models are evaluated on the CIFAKE test set using the same binary classification protocol. The final reported comparison includes:
 
-Accuracy is computed as:
-
-\[
-\mathrm{Accuracy}
-=
-\frac{TP+TN}{TP+TN+FP+FN}.
-\]
-
-Precision is computed as:
-
-\[
-\mathrm{Precision}
-=
-\frac{TP}{TP+FP}.
-\]
-
-Recall is computed as:
-
-\[
-\mathrm{Recall}
-=
-\frac{TP}{TP+FN}.
-\]
-
-The F1-score is computed as:
-
-\[
-\mathrm{F1}
-=
-2 \cdot
-\frac{\mathrm{Precision}\cdot\mathrm{Recall}}
-{\mathrm{Precision}+\mathrm{Recall}}.
-\]
-
-AUC measures the area under the receiver operating characteristic curve and reflects the ranking quality of the predicted probabilities.
+- EfficientNetB0 baseline,
+- ViT-Tiny baseline,
+- EfficientViT-Hybrid baseline,
+- AG-EfficientViT V1,
+- AG-EfficientViT V2, and
+- AG-EfficientViT V3.
 
 ---
 
@@ -431,7 +472,7 @@ The ablation study evaluates the contribution of each design choice, including s
 |---|:---:|:---:|:---:|---|---:|---:|---:|
 | EfficientNetB0 | ✓ | - | - | - | 98.065 | 98.062 | 0.997674 |
 | ViT-Tiny | - | ✓ | - | - | 98.750 | 98.749 | 0.998620 |
-| EfficientViT-Hybrid | ✓ | ✓ | - | Feature Concatenation | 98.710 | 98.709 | 0.998759 |
+| EfficientViT-Hybrid | ✓ | ✓ | - | Feature concatenation | 98.710 | 98.709 | 0.998759 |
 | AG-EfficientViT V1 | ✓ | ✓ | ✓ | Weighted / artifact-guided fusion | 98.670 | 98.668 | 0.998713 |
 | AG-EfficientViT V2 | ✓ | ✓ | ✓ | Gated concatenation / interaction fusion | 98.625 | 98.631 | 0.998733 |
 | **AG-EfficientViT V3** | ✓ | ✓ | ✓ | **Logit-level fusion with fine-tuned branch initialization** | **98.865** | **98.864** | **0.999116** |
@@ -466,7 +507,7 @@ Qualitative results are used to inspect representative predictions, including co
   <img src="docs/figures/qualitative_results.png" alt="Qualitative Results" width="950"/>
 </p>
 
-**Figure 5.** Representative qualitative examples on CIFAKE. This figure should include correctly classified real images, correctly classified AI-generated images, V3 success cases, and V3 failure cases.
+**Figure 5.** Representative qualitative examples on CIFAKE.
 
 | Case ID | Image Type | Ground Truth | ViT-Tiny | EfficientViT-Hybrid | AG-EfficientViT V3 | Notes |
 |---|---|---|---|---|---|---|
@@ -492,6 +533,42 @@ Visual interpretability can be used to analyze which image regions influence the
 **Figure 6.** Grad-CAM examples for AG-EfficientViT V3.
 
 The interpretability analysis should examine whether the model focuses on artifact-relevant regions such as unnatural textures, edge inconsistencies, object boundaries, or background irregularities. Failure cases should also be inspected to identify misleading activation patterns.
+
+---
+
+
+## 4.6 Comparison with Related Studies
+
+To position the proposed method against recent AI-generated image detection studies, Table 5 summarizes publicly reported results from related works that evaluate real-versus-AI-generated image classification, particularly on CIFAKE or closely related synthetic image detection benchmarks.
+
+> **Important note.** The comparison is intended as a literature-level positioning table, not as a fully controlled head-to-head benchmark. Reported values may be affected by differences in image resolution, preprocessing, train-test protocol, data augmentation, backbone capacity, random seeds, thresholding strategy, and whether AUC refers to ROC-AUC or PR-AUC.
+
+| Study | Year | Dataset / Task | Model / Method | Accuracy (%) | Precision (%) | Recall (%) | F1-score (%) | AUC |
+|---|---:|---|---|---:|---:|---:|---:|---:|
+| Bird and Lotfi [R1] | 2024 | CIFAKE | CNN with explainable Grad-CAM analysis | 92.98 | N/R | N/R | N/R | N/R |
+| Wang et al. [R2] | 2024 | CIFAKE | Transfer learning with DenseNet | 97.74 | N/R | N/R | N/R | N/R |
+| Islam et al. [R3] | 2024 | CIFAKE | MEXFIC meta-ensemble classifier | 94.00 | N/R | N/R | N/R | N/R |
+| Gunukula et al. [R4] | 2025 | CIFAKE | Hybrid SE-ResNet50 attention model | 96.12 | 97.04 | 88.94 | 92.82 | 0.9862 |
+| EfficientNet loss-variant study [R5] | 2025/2026 | CIFAKE | EfficientNet-B3 with attention-enhanced CE | 97.58 | 96.56 | 98.67 | 97.61 | 0.9973* |
+| **This repository** | **2026** | **CIFAKE** | **AG-EfficientViT V3** | **98.865** | **98.938** | **98.790** | **98.864** | **0.999116** |
+
+\* Reported as PR-AUC in the original study.
+
+The comparison shows that **AG-EfficientViT V3 achieves the strongest accuracy, F1-score, and AUC among the selected recent CIFAKE-oriented studies listed in Table 5**. Compared with conventional CNN-based detectors, the proposed model benefits from complementary feature modeling: EfficientNetB0 captures local convolutional artifact cues, ViT-Tiny contributes global contextual reasoning, and the artifact-guided branch provides additional evidence for subtle generative traces. The final V3 design further improves reliability by initializing the CNN and Transformer branches from their separately fine-tuned checkpoints before performing calibrated logit-level fusion.
+
+This result should be interpreted carefully. The current repository demonstrates strong performance on CIFAKE, but broader claims such as universal state-of-the-art performance require external dataset validation, multi-generator evaluation, and controlled reimplementation of competing methods under the same training and testing protocol.
+
+### References for Table 5
+
+[R1] J. J. Bird and A. Lotfi, “CIFAKE: Image Classification and Explainable Identification of AI-Generated Synthetic Images,” *IEEE Access*, 2024.
+
+[R2] Y. Wang, Y. Hao, and A. X. Cong, “Harnessing Machine Learning for Discerning AI-Generated Synthetic Images,” arXiv, 2024.
+
+[R3] M. T. Islam, I. H. Lee, A. I. Alzahrani, and K. Muhammad, “MEXFIC: A Meta Ensemble eXplainable Approach for AI-Synthesized Fake Image Classification,” *Alexandria Engineering Journal*, 2024.
+
+[R4] A. R. Gunukula, H. Das Gupta, and V. S. Sheng, “Detecting AI-Generated Images Using a Hybrid ResNet-SE Attention Model,” *Applied Sciences*, 2025.
+
+[R5] F. Bayram, “Comparison of Deep Learning Approaches for Fake Image Classification,” *International Journal of Advanced Natural Sciences and Engineering Researches*, 2026.
 
 ---
 
