@@ -499,7 +499,7 @@ The robustness analysis shows that AG-EfficientViT V3 performs strongly under cl
 
 ## 4.4 Qualitative Results
 
-Qualitative results are used to inspect representative predictions, including correct classifications, hard cases, and failure cases.
+Qualitative results inspect representative predictions, including correct classifications, hard cases, cases where AG-EfficientViT V3 improves over the baselines, and remaining failure cases.
 
 <p align="center">
   <img src="docs/figures/qualitative_results.png" alt="Qualitative Results" width="950"/>
@@ -507,22 +507,22 @@ Qualitative results are used to inspect representative predictions, including co
 
 **Figure 5.** Representative qualitative examples on CIFAKE.
 
-| Case ID | Image Type | Ground Truth | ViT-Tiny | EfficientViT-Hybrid | AG-EfficientViT V3 | Notes |
-|---|---|---|---|---|---|---|
-| Q1 | Real | Real | Correct | Correct | Correct | Easy real sample |
-| Q2 | Fake | Fake | Correct | Correct | Correct | Easy generated sample |
-| Q3 | Fake | Fake | Incorrect | Incorrect | Correct | V3 improves prediction |
-| Q4 | Real | Real | Correct | Incorrect | Correct | Artifact-guided correction helps |
-| Q5 | Real/Fake | Real/Fake | Correct | Correct | Incorrect | Failure case |
-| Q6 | Real/Fake | Real/Fake | Incorrect | Correct | Incorrect | Ambiguous case |
+| Case ID | Case Category | Selection Criterion | Purpose |
+|---|---|---|---|
+| Q1 | Easy real | Real image correctly classified by all evaluated models | Confirms agreement on clear real samples |
+| Q2 | Easy fake | AI-generated image correctly classified by all evaluated models | Confirms agreement on clear synthetic samples |
+| Q3 | V3 improvement | AG-EfficientViT V3 correct while at least one baseline is incorrect | Shows the benefit of the final fusion design |
+| Q4 | V3 improvement | AG-EfficientViT V3 correct while at least one baseline is incorrect | Highlights additional artifact-guided correction behavior |
+| Q5 | V3 failure | AG-EfficientViT V3 produces an incorrect prediction | Shows a remaining failure mode |
+| Q6 | Hard or ambiguous case | Difficult sample selected from the remaining predictions | Illustrates cases that still require further analysis |
 
-**Table 3.** Template for qualitative case analysis.
+**Table 3.** Qualitative case categories used in Figure 5.
 
-The qualitative analysis should emphasize where the final model improves over baselines and where it still fails. This is important for journal-style reporting because it shows not only numerical performance, but also model behavior under visually meaningful cases.
+The qualitative examples show both agreement cases and disagreement cases. This supports the numerical results by showing where the final model improves over the baselines, while also making the remaining failure cases visible.
 
 ## 4.5 Visual Interpretability
 
-Visual interpretability can be used to analyze which image regions influence the prediction of AG-EfficientViT V3.
+Visual interpretability is included through Grad-CAM examples for AG-EfficientViT V3.
 
 <p align="center">
   <img src="docs/figures/gradcam_examples.png" alt="Grad-CAM Visualization" width="950"/>
@@ -530,14 +530,14 @@ Visual interpretability can be used to analyze which image regions influence the
 
 **Figure 6.** Grad-CAM examples for AG-EfficientViT V3.
 
-The interpretability analysis should examine whether the model focuses on artifact-relevant regions such as unnatural textures, edge inconsistencies, object boundaries, or background irregularities. Failure cases should also be inspected to identify misleading activation patterns.
+The Grad-CAM examples provide a compact visual inspection of image regions that contribute to the final prediction. They complement the quantitative results by highlighting whether the model response is concentrated around visually meaningful regions such as object boundaries, local texture patterns, and background structures.
 
 ---
 
 
 ## 4.6 Comparison with Related Studies
 
-To position the proposed method against recent AI-generated image detection studies, Table 5 summarizes publicly reported results from related works that evaluate real-versus-AI-generated image classification, particularly on CIFAKE or closely related synthetic image detection benchmarks.
+To position the proposed method against recent AI-generated image detection studies, Table 4 summarizes publicly reported results from related works that evaluate real-versus-AI-generated image classification, particularly on CIFAKE or closely related synthetic image detection benchmarks.
 
 > **Important note.** The comparison is intended as a literature-level positioning table, not as a fully controlled head-to-head benchmark. Reported values may be affected by differences in image resolution, preprocessing, train-test protocol, data augmentation, backbone capacity, random seeds, thresholding strategy, and whether AUC refers to ROC-AUC or PR-AUC.
 
@@ -552,11 +552,11 @@ To position the proposed method against recent AI-generated image detection stud
 
 \* Reported as PR-AUC in the original study.
 
-The comparison shows that **AG-EfficientViT V3 achieves the strongest accuracy, F1-score, and AUC among the selected recent CIFAKE-oriented studies listed in Table 5**. Compared with conventional CNN-based detectors, the proposed model benefits from complementary feature modeling: EfficientNetB0 captures local convolutional artifact cues, ViT-Tiny contributes global contextual reasoning, and the artifact-guided branch provides additional evidence for subtle generative traces. The final V3 design further improves reliability by initializing the CNN and Transformer branches from their separately fine-tuned checkpoints before performing calibrated logit-level fusion.
+The comparison shows that **AG-EfficientViT V3 achieves the strongest accuracy, F1-score, and AUC among the selected recent CIFAKE-oriented studies listed in Table 4**. Compared with conventional CNN-based detectors, the proposed model benefits from complementary feature modeling: EfficientNetB0 captures local convolutional artifact cues, ViT-Tiny contributes global contextual reasoning, and the artifact-guided branch provides additional evidence for subtle generative traces. The final V3 design further improves reliability by initializing the CNN and Transformer branches from their separately fine-tuned checkpoints before performing calibrated logit-level fusion.
 
 This result should be interpreted carefully. The current repository demonstrates strong performance on CIFAKE, but broader claims such as universal state-of-the-art performance require external dataset validation, multi-generator evaluation, and controlled reimplementation of competing methods under the same training and testing protocol.
 
-### References for Table 5
+### References for Table 4
 
 [R1] J. J. Bird and A. Lotfi, “CIFAKE: Image Classification and Explainable Identification of AI-Generated Synthetic Images,” *IEEE Access*, 2024.
 
@@ -677,8 +677,9 @@ Train AG-EfficientViT V3:
 python train_ag_efficientvit_v3.py --epochs 10 --batch-size 128 --lr 0.0001 --weight-decay 0.0001
 ```
 
-## 5.4 Evaluation
+Model checkpoints are not tracked in this repository because they are large files. To evaluate a trained model directly, place the required `.pth` files under `checkpoints/`; otherwise, run the training commands above to regenerate them.
 
+## 5.4 Evaluation
 Evaluate AG-EfficientViT V3:
 
 ```bash
